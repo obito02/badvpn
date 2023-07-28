@@ -26,6 +26,7 @@ if (NOT EMSCRIPTEN)
             BInputProcess.c
             BThreadSignal.c
             BLockReactor.c
+            map.c
         )
     endif ()
 endif ()

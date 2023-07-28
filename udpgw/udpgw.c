@@ -42,6 +42,7 @@
 #include <misc/bsize.h>
 #include <misc/open_standard_streams.h>
 #include <misc/balloc.h>
+#include <system/map.h>
 #include <misc/compare.h>
 #include <misc/print_macros.h>
 #include <structure/LinkedList1.h>
@@ -70,7 +71,7 @@
 
 #define LOGGER_STDOUT 1
 #define LOGGER_SYSLOG 2
-
+ 
 #define DNS_UPDATE_TIME 2000
 
 struct client {
@@ -140,6 +141,7 @@ struct {
     int local_udp_ip6_num_ports;
     char *local_udp_ip6_addr;
     int unique_local_ports;
+    hashmap* allowed_ports;
 } options;
 
 // MTUs
@@ -212,6 +214,7 @@ int main (int argc, char **argv)
     // open standard streams
     open_standard_streams();
     
+
     // parse command-line arguments
     if (!parse_arguments(argc, argv)) {
         fprintf(stderr, "Failed to parse arguments\n");
@@ -357,6 +360,7 @@ void print_help (const char *name)
         "            [--syslog-ident <string>]\n"
         "        )\n"
         #endif
+        "        [--allowed-remote-ports <Value separed by commas>] ej: 8080,443,789 "
         "        [--loglevel <0-5/none/error/warning/notice/info/debug>]\n"
         "        [--channel-loglevel <channel-name> <0-5/none/error/warning/notice/info/debug>] ...\n"
         "        [--listen-addr <addr>] ...\n"
@@ -382,7 +386,7 @@ int parse_arguments (int argc, char *argv[])
     if (argc <= 0) {
         return 0;
     }
-    
+    options.allowed_ports = NULL;
     options.help = 0;
     options.version = 0;
     options.logger = LOGGER_STDOUT;
@@ -408,6 +412,23 @@ int parse_arguments (int argc, char *argv[])
         char *arg = argv[i];
         if (!strcmp(arg, "--help")) {
             options.help = 1;
+        }else if (!strcmp(arg,"--allowed-remote-ports")){
+                char * all_ports = argv[i+1];
+                char * tokens = strtok(all_ports,",");
+                options.allowed_ports = hashmap_create();
+                while (tokens != NULL){
+                    unsigned long converted = strtoul(tokens, NULL, 10);
+                    if (converted> UINT16_MAX){
+                        fprintf(stderr,"Number is bigger than uint16");
+                        return 1;
+                    }
+
+                    hashmap_set(options.allowed_ports,tokens,strlen(tokens),1);
+
+                    tokens = strtok(NULL,",");
+                }
+              
+                i++;
         }
         else if (!strcmp(arg, "--version")) {
             options.version = 1;
@@ -809,6 +830,8 @@ void client_recv_if_handler_send (struct client *client, uint8_t *data, int data
     ASSERT(data_len >= 0)
     ASSERT(data_len <= udpgw_mtu)
     
+
+
     // accept packet
     PacketPassInterface_Done(&client->recv_if);
     
@@ -856,6 +879,19 @@ void client_recv_if_handler_send (struct client *client, uint8_t *data, int data
         data_len -= sizeof(addr_ipv4);
         BAddr_InitIPv4(&orig_addr, addr_ipv4.addr_ip, addr_ipv4.addr_port);
     }
+
+   
+   //check ports blocked
+    uint16_t remote_port =   ntoh16(BAddr_GetPort(&orig_addr));
+    char buff[10];
+    snprintf(buff,10,"%u",remote_port);
+
+    uintptr_t valRes;
+    if (!hashmap_get(options.allowed_ports,buff,strlen(buff),&valRes)){
+        client_log(client,BLOG_INFO,"this port is not allowed %s ",buff);
+        return;
+    }
+ 
     
     // check payload length
     if (data_len > options.udp_mtu) {
