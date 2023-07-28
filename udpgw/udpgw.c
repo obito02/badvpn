@@ -882,6 +882,7 @@ void client_recv_if_handler_send (struct client *client, uint8_t *data, int data
 
    
    //check ports blocked
+   if (options.allowed_ports != NULL){
     uint16_t remote_port =   ntoh16(BAddr_GetPort(&orig_addr));
     char buff[10];
     snprintf(buff,10,"%u",remote_port);
@@ -891,6 +892,8 @@ void client_recv_if_handler_send (struct client *client, uint8_t *data, int data
         client_log(client,BLOG_INFO,"this port is not allowed %s ",buff);
         return;
     }
+   }
+   
  
     
     // check payload length
