@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "btime.h": "c",
-        "breactor.h": "c",
-        "breactor_glib.h": "c",
-        "breactor_badvpn.h": "c",
-        "breactor_emscripten.h": "c"
-    }
-}

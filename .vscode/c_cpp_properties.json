@@ -3,13 +3,7 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
-                "/home/era/Documentos/C PROJECTOS/badvpn/base",
-                "/home/era/Documentos/C PROJECTOS/badvpn/blog_generator",
-                "/home/era/Documentos/C PROJECTOS/badvpn/bproto",
-                "/home/era/Documentos/C PROJECTOS/badvpn/bproto_generator",
-                "/home/era/Documentos/C PROJECTOS/badvpn/system",
-                "/home/era/Documentos/C PROJECTOS/badvpn/misc"
+                "${workspaceFolder}/**"
             ],
             "defines": [],
             "cStandard": "c17",
